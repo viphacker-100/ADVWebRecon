@@ -53,8 +53,8 @@ A powerful security tool for performing comprehensive reconnaissance on web appl
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/web-recon.git
-cd web-recon
+git clone https://github.com/viphacker-100/ADVWebRecon
+cd ADVWebRecon
 ```
 
 2. Install required dependencies:
