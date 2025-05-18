@@ -340,6 +340,13 @@ class ADVWebRecon:
         self.http_limiter = RateLimiter(max_requests=10, time_window=1)  # 10 requests per second
         self.dns_limiter = RateLimiter(max_requests=5, time_window=1)    # 5 DNS queries per second
 
+    def _normalize_url(self, url):
+        """Normalize the URL to include a scheme if missing"""
+        if not url.startswith(('http://', 'https://')):
+            ColorOutput.warning(f"URL scheme missing, assuming https:// for {url}")
+            return 'https://' + url
+        return url
+
     def _calculate_security_score(self):
         """Calculate overall security score based on findings"""
         score = 100  # Start with perfect score
