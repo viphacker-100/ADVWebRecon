@@ -228,6 +228,7 @@ COMMON_DIRS = [
 class ColorOutput:
     """Class for colored terminal output"""
     
+    # Colors
     PURPLE = '\033[95m'
     BLUE = '\033[94m'
     GREEN = '\033[92m'
@@ -237,30 +238,143 @@ class ColorOutput:
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
     
+    # Box drawing characters
+    BOX_TOP_LEFT = '┌'
+    BOX_TOP_RIGHT = '┐'
+    BOX_BOTTOM_LEFT = '└'
+    BOX_BOTTOM_RIGHT = '┘'
+    BOX_HORIZONTAL = '─'
+    BOX_VERTICAL = '│'
+    BOX_T_DOWN = '┬'
+    BOX_T_UP = '┴'
+    BOX_T_RIGHT = '├'
+    BOX_T_LEFT = '┤'
+    BOX_CROSS = '┼'
+    
+    @staticmethod
+    def _print_boxed(text, color=None, width=80):
+        """Print text in a box with optional color"""
+        lines = text.split('\n')
+        max_length = max(len(line) for line in lines)
+        box_width = min(max_length + 4, width)
+        
+        # Print top border
+        print(f"{color if color else ''}{ColorOutput.BOX_TOP_LEFT}{ColorOutput.BOX_HORIZONTAL * (box_width - 2)}{ColorOutput.BOX_TOP_RIGHT}{ColorOutput.ENDC}")
+        
+        # Print content
+        for line in lines:
+            padding = ' ' * ((box_width - len(line) - 2) // 2)
+            print(f"{color if color else ''}{ColorOutput.BOX_VERTICAL}{padding}{line}{padding}{' ' if (box_width - len(line)) % 2 else ''}{ColorOutput.BOX_VERTICAL}{ColorOutput.ENDC}")
+        
+        # Print bottom border
+        print(f"{color if color else ''}{ColorOutput.BOX_BOTTOM_LEFT}{ColorOutput.BOX_HORIZONTAL * (box_width - 2)}{ColorOutput.BOX_BOTTOM_RIGHT}{ColorOutput.ENDC}")
+
+    @staticmethod
+    def _print_separator(char='─', color=None, width=80):
+        """Print a separator line"""
+        print(f"{color if color else ''}{char * width}{ColorOutput.ENDC}")
+
     @staticmethod
     def info(message):
-        """Print info message"""
-        print(f"{ColorOutput.BLUE}[*]{ColorOutput.ENDC} {message}")
-    
+        """Print info message in blue"""
+        print(f"{ColorOutput.BLUE}[*] {message}{ColorOutput.ENDC}")
+
     @staticmethod
     def success(message):
-        """Print success message"""
-        print(f"{ColorOutput.GREEN}[+]{ColorOutput.ENDC} {message}")
-    
+        """Print success message in green"""
+        print(f"{ColorOutput.GREEN}[+] {message}{ColorOutput.ENDC}")
+
     @staticmethod
     def warning(message):
-        """Print warning message"""
-        print(f"{ColorOutput.YELLOW}[!]{ColorOutput.ENDC} {message}")
-    
+        """Print warning message in yellow"""
+        print(f"{ColorOutput.YELLOW}[!] {message}{ColorOutput.ENDC}")
+
     @staticmethod
     def error(message):
-        """Print error message"""
-        print(f"{ColorOutput.RED}[-]{ColorOutput.ENDC} {message}")
-    
+        """Print error message in red"""
+        print(f"{ColorOutput.RED}[-] {message}{ColorOutput.ENDC}")
+
     @staticmethod
     def section(title):
-        """Print section title"""
-        print(f"\n{ColorOutput.BOLD}{ColorOutput.UNDERLINE}{title}{ColorOutput.ENDC}\n")
+        """Print section title in purple with box"""
+        ColorOutput._print_separator(ColorOutput.PURPLE)
+        ColorOutput._print_boxed(title, ColorOutput.PURPLE + ColorOutput.BOLD)
+        ColorOutput._print_separator(ColorOutput.PURPLE)
+
+    @staticmethod
+    def attention(message):
+        """Print attention message in bold yellow"""
+        print(f"{ColorOutput.YELLOW}{ColorOutput.BOLD}[!] {message}{ColorOutput.ENDC}")
+
+    @staticmethod
+    def table(headers, rows, title=None):
+        """Print a formatted table"""
+        if not rows:
+            return
+        
+        # Calculate column widths
+        col_widths = [len(str(header)) for header in headers]
+        for row in rows:
+            for i, cell in enumerate(row):
+                col_widths[i] = max(col_widths[i], len(str(cell)))
+        
+        # Print title if provided
+        if title:
+            ColorOutput.section(title)
+        
+        # Print headers
+        header_str = f"{ColorOutput.BOX_VERTICAL} "
+        for i, header in enumerate(headers):
+            header_str += f"{ColorOutput.BOLD}{header}{ColorOutput.ENDC}{' ' * (col_widths[i] - len(str(header)))} {ColorOutput.BOX_VERTICAL} "
+        print(header_str)
+        
+        # Print separator
+        separator = f"{ColorOutput.BOX_T_RIGHT}"
+        for width in col_widths:
+            separator += f"{ColorOutput.BOX_HORIZONTAL * (width + 2)}{ColorOutput.BOX_CROSS}"
+        separator = separator[:-1] + ColorOutput.BOX_T_LEFT
+        print(separator)
+        
+        # Print rows
+        for row in rows:
+            row_str = f"{ColorOutput.BOX_VERTICAL} "
+            for i, cell in enumerate(row):
+                row_str += f"{str(cell)}{' ' * (col_widths[i] - len(str(cell)))} {ColorOutput.BOX_VERTICAL} "
+            print(row_str)
+        
+        # Print bottom border
+        bottom = f"{ColorOutput.BOX_BOTTOM_LEFT}"
+        for width in col_widths:
+            bottom += f"{ColorOutput.BOX_HORIZONTAL * (width + 2)}{ColorOutput.BOX_T_UP}"
+        bottom = bottom[:-1] + ColorOutput.BOX_BOTTOM_RIGHT
+        print(bottom)
+
+    @staticmethod
+    def progress(current, total, prefix='', suffix='', length=50):
+        """Print a progress bar"""
+        percent = current / total
+        filled_length = int(length * percent)
+        bar = '█' * filled_length + '░' * (length - filled_length)
+        print(f'\r{prefix} |{bar}| {percent:.1%} {suffix}', end='')
+        if current == total:
+            print()
+
+    @staticmethod
+    def key_value(key, value, indent=0):
+        """Print a key-value pair with proper formatting"""
+        indent_str = ' ' * indent
+        print(f"{indent_str}{ColorOutput.BOLD}{key}:{ColorOutput.ENDC} {value}")
+
+    @staticmethod
+    def list_item(item, indent=0, bullet='•'):
+        """Print a list item with proper formatting"""
+        indent_str = ' ' * indent
+        print(f"{indent_str}{ColorOutput.YELLOW}{bullet}{ColorOutput.ENDC} {item}")
+
+    @staticmethod
+    def highlight(text, color=YELLOW):
+        """Highlight specific text in a message"""
+        return f"{color}{text}{ColorOutput.ENDC}"
 
 class RateLimiter:
     """Rate limiter class to control request rates"""
@@ -298,6 +412,7 @@ class ADVWebRecon:
         self.threads = threads
         self.timeout = timeout
         self.verbose = verbose
+        self.custom_headers = {}  # Add custom headers attribute
         self.results = {
             "target": self.target_url,
             "domain": self.domain,
@@ -408,26 +523,39 @@ class ADVWebRecon:
         self.results["security_score"] = max(0, score)  # Ensure score doesn't go below 0
 
     def run(self):
-        """Run all reconnaissance modules with enhanced reporting"""
+        """Run all reconnaissance modules with enhanced error handling and reporting"""
         ColorOutput.section(f"Starting Advanced Web Reconnaissance on {self.target_url}")
         ColorOutput.info(f"Target domain: {self.domain}")
         
         try:
-            # Run modules
-            self._dns_enumeration()
-            self._port_scanning()
-            self._analyze_headers()
-            self._detect_methods()
-            self._analyze_ssl()
-            self._check_robots_sitemap()
-            self._directory_discovery()
-            self._advanced_fingerprinting()
-            self._subdomain_enumeration()
-            self._vulnerability_checks()
-            self._detect_waf()
-            self._api_discovery()
-            self._check_cors_misconfig()
-            self._js_analysis()
+            # Run modules with error handling
+            modules = [
+                (self._dns_enumeration, "DNS Enumeration"),
+                (self._port_scanning, "Port Scanning"),
+                (self._analyze_headers, "Headers Analysis"),
+                (self._detect_methods, "Methods Detection"),
+                (self._analyze_ssl, "SSL/TLS Analysis"),
+                (self._check_robots_sitemap, "Robots.txt & Sitemap Analysis"),
+                (self._directory_discovery, "Directory Discovery"),
+                (self._advanced_fingerprinting, "Technology Fingerprinting"),
+                (self._subdomain_enumeration, "Subdomain Enumeration"),
+                (self._vulnerability_checks, "Vulnerability Checks"),
+                (self._detect_waf, "WAF Detection"),
+                (self._api_discovery, "API Discovery"),
+                (self._check_cors_misconfig, "CORS Misconfiguration Check"),
+                (self._js_analysis, "JavaScript Analysis")
+            ]
+            
+            for module, name in modules:
+                try:
+                    ColorOutput.section(f"Running {name}")
+                    module()
+                except Exception as e:
+                    ColorOutput.error(f"Error in {name}: {str(e)}")
+                    if self.verbose:
+                        import traceback
+                        ColorOutput.error(traceback.format_exc())
+                    continue
             
             # Calculate security score and risk level
             self._calculate_security_score()
@@ -456,29 +584,1122 @@ class ADVWebRecon:
                 self._write_results()
                 self.generate_html_report()
             return False
+        except Exception as e:
+            ColorOutput.error(f"Unexpected error during reconnaissance: {str(e)}")
+            if self.verbose:
+                import traceback
+                ColorOutput.error(traceback.format_exc())
+            return False
             
         return True
     
-    def _write_results(self):
-        """Write results to output file"""
+    def _write_results(self, format='json'):
+        """Write results to output file with multiple format options"""
         try:
-            with open(self.output_file, 'w') as f:
-                json.dump(self.results, f, indent=4)
-            ColorOutput.success(f"Results saved to {self.output_file}")
+            # Fix and validate results before writing
+            if not self._fix_results():
+                ColorOutput.error("Failed to fix results, aborting write")
+                return
+
+            if not self.output_file:
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                self.output_file = f"recon_results_{self.domain}_{timestamp}"
+
+            # Add additional analysis to results
+            self._enhance_results()
+
+            # Display results in terminal first
+            self._display_results()
+
+            # Write to file based on format
+            if format.lower() == 'json':
+                output_file = f"{self.output_file}.json"
+                with open(output_file, 'w', encoding='utf-8') as f:
+                    json.dump(self.results, f, indent=4)
+                ColorOutput.success(f"Results saved to {output_file}")
+
+            elif format.lower() == 'yaml':
+                try:
+                    import yaml
+                    output_file = f"{self.output_file}.yaml"
+                    with open(output_file, 'w', encoding='utf-8') as f:
+                        yaml.dump(self.results, f, default_flow_style=False)
+                    ColorOutput.success(f"Results saved to {output_file}")
+                except ImportError:
+                    ColorOutput.error("PyYAML not installed. Install it using: pip install pyyaml")
+                    return
+
+            elif format.lower() == 'csv':
+                output_file = f"{self.output_file}.csv"
+                self._write_csv_results(output_file)
+                ColorOutput.success(f"Results saved to {output_file}")
+
+            elif format.lower() == 'txt':
+                output_file = f"{self.output_file}.txt"
+                self._write_txt_results(output_file)
+                ColorOutput.success(f"Results saved to {output_file}")
+
+            else:
+                ColorOutput.error(f"Unsupported format: {format}")
+                return
+
+            # Generate HTML report
+            self.generate_html_report()
+
         except Exception as e:
             ColorOutput.error(f"Error writing results to file: {str(e)}")
-    
-    @lru_cache(maxsize=100)
+            if self.verbose:
+                import traceback
+                ColorOutput.error(traceback.format_exc())
+
+    def _display_results(self):
+        """Display results in a professional format in the terminal"""
+        ColorOutput.section("Reconnaissance Results")
+        
+        # Target Information
+        ColorOutput.section("Target Information")
+        ColorOutput.key_value("Target URL", self.target_url)
+        ColorOutput.key_value("Domain", self.domain)
+        ColorOutput.key_value("Scan Date", self.results.get('timestamp', 'N/A'))
+        
+        # Security Score
+        score = self.results.get('security_score', 0)
+        risk_level = self.results.get('risk_level', 'Unknown')
+        ColorOutput.section("Security Assessment")
+        
+        # Create a visual score representation
+        score_bar = '█' * (score // 10) + '░' * (10 - (score // 10))
+        ColorOutput.info(f"Security Score: {score}/100")
+        print(f"{ColorOutput.BOLD}Score: {ColorOutput.ENDC}[{score_bar}] {score}%")
+        ColorOutput.key_value("Risk Level", risk_level)
+        
+        # DNS Information
+        if "dns_info" in self.results and self.results["dns_info"]:
+            ColorOutput.section("DNS Information")
+            headers = ["Record Type", "Values"]
+            rows = []
+            for record_type, values in self.results["dns_info"].items():
+                if values:
+                    rows.append([record_type, ', '.join(values)])
+            ColorOutput.table(headers, rows)
+        
+        # Open Ports
+        if "open_ports" in self.results and self.results["open_ports"]:
+            ColorOutput.section("Open Ports")
+            headers = ["Port", "Service"]
+            rows = [[port, self._get_service_name(port)] for port in self.results["open_ports"]]
+            ColorOutput.table(headers, rows)
+        
+        # Technologies
+        if "technologies" in self.results and self.results["technologies"]:
+            ColorOutput.section("Technologies Detected")
+            headers = ["Technology", "Version"]
+            rows = []
+            for tech, version in self.results["technologies"].items():
+                version_str = "Detected" if isinstance(version, bool) else f"Version: {version}"
+                rows.append([tech, version_str])
+            ColorOutput.table(headers, rows)
+        
+        # Vulnerabilities
+        if "vulnerabilities" in self.results and self.results["vulnerabilities"]:
+            ColorOutput.section("Potential Vulnerabilities")
+            headers = ["Type", "URL", "Details"]
+            rows = []
+            for vuln in self.results["vulnerabilities"]:
+                rows.append([
+                    vuln.get('type', 'Unknown'),
+                    vuln.get('url', 'N/A'),
+                    vuln.get('details', '')
+                ])
+            ColorOutput.table(headers, rows)
+        
+        # WAF Detection
+        if "waf" in self.results and self.results["waf"]:
+            ColorOutput.section("WAF Detection")
+            for waf in self.results["waf"]:
+                ColorOutput.list_item(waf)
+        
+        # API Endpoints
+        if "api_endpoints" in self.results and self.results["api_endpoints"]:
+            ColorOutput.section("API Endpoints")
+            headers = ["URL", "Status", "Content Type"]
+            rows = []
+            for api in self.results["api_endpoints"]:
+                rows.append([
+                    api.get('url', 'N/A'),
+                    api.get('status_code', 'N/A'),
+                    api.get('content_type', 'N/A')
+                ])
+            ColorOutput.table(headers, rows)
+        
+        # CORS Issues
+        if "cors_issues" in self.results and self.results["cors_issues"]:
+            ColorOutput.section("CORS Misconfigurations")
+            headers = ["Severity", "Origin", "Description", "Details"]
+            rows = []
+            for issue in self.results["cors_issues"]:
+                details = issue.get('details', {})
+                details_str = ""
+                if isinstance(details, dict):
+                    if 'risk' in details:
+                        details_str += f"Risk: {details['risk']}\n"
+                    if 'recommendation' in details:
+                        details_str += f"Recommendation: {details['recommendation']}"
+                
+                severity_color = {
+                    "Critical": ColorOutput.RED,
+                    "High": ColorOutput.RED,
+                    "Medium": ColorOutput.YELLOW,
+                    "Low": ColorOutput.BLUE
+                }.get(issue.get('severity', 'Unknown'), ColorOutput.ENDC)
+                
+                rows.append([
+                    f"{severity_color}{issue.get('severity', 'N/A')}{ColorOutput.ENDC}",
+                    issue.get('origin', 'N/A'),
+                    issue.get('description', ''),
+                    details_str
+                ])
+            ColorOutput.table(headers, rows)
+            
+            # Display CORS score
+            cors_score = self.results.get('cors_score', 0)
+            ColorOutput.info(f"CORS Security Score: {cors_score}/100")
+            score_bar = '█' * (cors_score // 10) + '░' * (10 - (cors_score // 10))
+            print(f"{ColorOutput.BOLD}CORS Score: {ColorOutput.ENDC}[{score_bar}] {cors_score}%")
+        
+        # Recommendations
+        if "recommendations" in self.results and self.results["recommendations"]:
+            ColorOutput.section("Security Recommendations")
+            for rec in self.results["recommendations"]:
+                ColorOutput.list_item(rec)
+        
+        ColorOutput.section("End of Report")
+
+    def _enhance_results(self):
+        """Add additional analysis and enhancements to results"""
+        # Add security score breakdown
+        self.results["security_analysis"] = {
+            "score_breakdown": {
+                "headers": self._calculate_headers_score(),
+                "ssl": self._calculate_ssl_score(),
+                "cors": self._calculate_cors_score(),
+                "waf": self._calculate_waf_score(),
+                "vulnerabilities": self._calculate_vuln_score()
+            },
+            "recommendations": self._generate_recommendations(),
+            "risk_assessment": self._assess_risks()
+        }
+
+        # Add technology stack analysis
+        self.results["technology_analysis"] = {
+            "frontend": self._analyze_frontend_tech(),
+            "backend": self._analyze_backend_tech(),
+            "frameworks": self._analyze_frameworks(),
+            "databases": self._analyze_databases(),
+            "servers": self._analyze_servers()
+        }
+
+        # Add infrastructure analysis
+        self.results["infrastructure_analysis"] = {
+            "cdn": self._analyze_cdn(),
+            "hosting": self._analyze_hosting(),
+            "dns": self._analyze_dns_setup(),
+            "email": self._analyze_email_setup()
+        }
+
+        # Add performance metrics
+        self.results["performance_metrics"] = {
+            "response_times": self._measure_response_times(),
+            "resource_usage": self._analyze_resource_usage(),
+            "caching": self._analyze_caching()
+        }
+
+    def _calculate_headers_score(self):
+        """Calculate security score based on headers"""
+        score = 100
+        deductions = []
+        
+        security_headers = {
+            "Strict-Transport-Security": 10,
+            "Content-Security-Policy": 10,
+            "X-Frame-Options": 5,
+            "X-Content-Type-Options": 5,
+            "X-XSS-Protection": 5,
+            "Referrer-Policy": 5,
+            "Permissions-Policy": 5,
+            "Cross-Origin-Embedder-Policy": 5,
+            "Cross-Origin-Opener-Policy": 5,
+            "Cross-Origin-Resource-Policy": 5
+        }
+
+        for header, points in security_headers.items():
+            if header not in self.results.get("headers", {}):
+                score -= points
+                deductions.append(f"Missing {header} (-{points} points)")
+
+        return {
+            "score": max(0, score),
+            "deductions": deductions
+        }
+
+    def _calculate_ssl_score(self):
+        """Calculate security score based on SSL/TLS configuration"""
+        score = 100
+        deductions = []
+        
+        ssl_info = self.results.get("ssl_info", {})
+        
+        # Check SSL version
+        if "version" in ssl_info:
+            if "TLSv1.0" in ssl_info["version"] or "TLSv1.1" in ssl_info["version"]:
+                score -= 20
+                deductions.append("Outdated TLS version (-20 points)")
+        
+        # Check certificate expiration
+        if "days_remaining" in ssl_info:
+            if ssl_info["days_remaining"] < 30:
+                score -= 15
+                deductions.append("Certificate expiring soon (-15 points)")
+            elif ssl_info["days_remaining"] < 0:
+                score -= 30
+                deductions.append("Certificate expired (-30 points)")
+        
+        return {
+            "score": max(0, score),
+            "deductions": deductions
+        }
+
+    def _calculate_cors_score(self):
+        """Calculate security score based on CORS configuration"""
+        score = 100
+        deductions = []
+        
+        cors_issues = self.results.get("cors_issues", [])
+        for issue in cors_issues:
+            if issue.get("severity") == "Critical":
+                score -= 30
+                deductions.append("Critical CORS misconfiguration (-30 points)")
+            elif issue.get("severity") == "High":
+                score -= 20
+                deductions.append("High severity CORS issue (-20 points)")
+            elif issue.get("severity") == "Medium":
+                score -= 10
+                deductions.append("Medium severity CORS issue (-10 points)")
+        
+        return {
+            "score": max(0, score),
+            "deductions": deductions
+        }
+
+    def _calculate_waf_score(self):
+        """Calculate security score based on WAF presence"""
+        score = 100
+        deductions = []
+        
+        waf = self.results.get("waf", [])
+        if not waf:
+            score -= 20
+            deductions.append("No WAF detected (-20 points)")
+        
+        return {
+            "score": max(0, score),
+            "deductions": deductions
+        }
+
+    def _calculate_vuln_score(self):
+        """Calculate security score based on vulnerabilities"""
+        score = 100
+        deductions = []
+        
+        vulnerabilities = self.results.get("vulnerabilities", [])
+        for vuln in vulnerabilities:
+            if "Critical" in str(vuln.get("type", "")):
+                score -= 30
+                deductions.append("Critical vulnerability (-30 points)")
+            elif "High" in str(vuln.get("type", "")):
+                score -= 20
+                deductions.append("High severity vulnerability (-20 points)")
+            elif "Medium" in str(vuln.get("type", "")):
+                score -= 10
+                deductions.append("Medium severity vulnerability (-10 points)")
+        
+        return {
+            "score": max(0, score),
+            "deductions": deductions
+        }
+
+    def _generate_recommendations(self):
+        """Generate security recommendations based on findings"""
+        recommendations = []
+        
+        # Header recommendations
+        headers = self.results.get("headers", {})
+        if "Strict-Transport-Security" not in headers:
+            recommendations.append("Implement HSTS to enforce HTTPS")
+        if "Content-Security-Policy" not in headers:
+            recommendations.append("Implement Content Security Policy")
+        
+        # SSL recommendations
+        ssl_info = self.results.get("ssl_info", {})
+        if "version" in ssl_info and ("TLSv1.0" in ssl_info["version"] or "TLSv1.1" in ssl_info["version"]):
+            recommendations.append("Upgrade to TLS 1.2 or higher")
+        
+        # CORS recommendations
+        cors_issues = self.results.get("cors_issues", [])
+        for issue in cors_issues:
+            if issue.get("severity") in ["Critical", "High"]:
+                recommendations.append(f"Fix CORS misconfiguration: {issue.get('description', '')}")
+        
+        # WAF recommendations
+        if not self.results.get("waf", []):
+            recommendations.append("Consider implementing a Web Application Firewall")
+        
+        return recommendations
+
+    def _assess_risks(self):
+        """Assess overall security risks"""
+        risks = []
+        
+        # Check for critical vulnerabilities
+        vulnerabilities = self.results.get("vulnerabilities", [])
+        if any("Critical" in str(v.get("type", "")) for v in vulnerabilities):
+            risks.append({
+                "level": "Critical",
+                "description": "Critical vulnerabilities detected",
+                "impact": "High risk of system compromise"
+            })
+        
+        # Check SSL/TLS configuration
+        ssl_info = self.results.get("ssl_info", {})
+        if "version" in ssl_info and ("TLSv1.0" in ssl_info["version"] or "TLSv1.1" in ssl_info["version"]):
+            risks.append({
+                "level": "High",
+                "description": "Outdated TLS version",
+                "impact": "Vulnerable to known attacks"
+            })
+        
+        # Check CORS configuration
+        cors_issues = self.results.get("cors_issues", [])
+        if any(issue.get("severity") == "Critical" for issue in cors_issues):
+            risks.append({
+                "level": "High",
+                "description": "Critical CORS misconfiguration",
+                "impact": "Potential for cross-origin attacks"
+            })
+        
+        return risks
+
+    def _analyze_frontend_tech(self):
+        """Analyze frontend technologies"""
+        frontend = {
+            "frameworks": [],
+            "libraries": [],
+            "ui_components": []
+        }
+        
+        technologies = self.results.get("technologies", {})
+        
+        # Check for frontend frameworks
+        frontend_frameworks = ["React", "Angular", "Vue.js", "Next.js", "Nuxt.js", "Gatsby"]
+        for framework in frontend_frameworks:
+            if framework in technologies:
+                frontend["frameworks"].append(framework)
+        
+        # Check for UI libraries
+        ui_libraries = ["Bootstrap", "Material-UI", "Tailwind CSS", "Foundation"]
+        for library in ui_libraries:
+            if library in technologies:
+                frontend["libraries"].append(library)
+        
+        return frontend
+
+    def _analyze_backend_tech(self):
+        """Analyze backend technologies"""
+        backend = {
+            "frameworks": [],
+            "languages": [],
+            "databases": []
+        }
+        
+        technologies = self.results.get("technologies", {})
+        
+        # Check for backend frameworks
+        backend_frameworks = ["Django", "Flask", "Express.js", "Laravel", "Ruby on Rails", "ASP.NET"]
+        for framework in backend_frameworks:
+            if framework in technologies:
+                backend["frameworks"].append(framework)
+        
+        # Check for programming languages
+        languages = ["PHP", "Python", "Node.js", "Ruby", "Java", ".NET"]
+        for language in languages:
+            if language in technologies:
+                backend["languages"].append(language)
+        
+        return backend
+
+    def _analyze_frameworks(self):
+        """Analyze detected frameworks"""
+        frameworks = {
+            "web": [],
+            "cms": [],
+            "ecommerce": []
+        }
+        
+        technologies = self.results.get("technologies", {})
+        
+        # Web frameworks
+        web_frameworks = ["Django", "Flask", "Express.js", "Laravel", "Ruby on Rails", "ASP.NET"]
+        for framework in web_frameworks:
+            if framework in technologies:
+                frameworks["web"].append(framework)
+        
+        # CMS platforms
+        cms_platforms = ["WordPress", "Drupal", "Joomla", "Magento"]
+        for cms in cms_platforms:
+            if cms in technologies:
+                frameworks["cms"].append(cms)
+        
+        # E-commerce platforms
+        ecommerce_platforms = ["Shopify", "WooCommerce", "Magento", "PrestaShop"]
+        for platform in ecommerce_platforms:
+            if platform in technologies:
+                frameworks["ecommerce"].append(platform)
+        
+        return frameworks
+
+    def _analyze_databases(self):
+        """Analyze potential database technologies"""
+        databases = []
+        
+        technologies = self.results.get("technologies", {})
+        headers = self.results.get("headers", {})
+        
+        # Check for database indicators
+        db_indicators = {
+            "MySQL": ["mysql", "mysqli"],
+            "PostgreSQL": ["postgres", "postgresql"],
+            "MongoDB": ["mongodb", "mongoose"],
+            "Redis": ["redis"],
+            "SQLite": ["sqlite"],
+            "Oracle": ["oracle", "oracle-database"],
+            "SQL Server": ["mssql", "sqlserver"]
+        }
+        
+        for db, indicators in db_indicators.items():
+            if any(indicator in str(technologies).lower() or indicator in str(headers).lower() for indicator in indicators):
+                databases.append(db)
+        
+        return databases
+
+    def _analyze_servers(self):
+        """Analyze web server technologies"""
+        servers = []
+        
+        technologies = self.results.get("technologies", {})
+        headers = self.results.get("headers", {})
+        
+        # Check for server indicators
+        server_indicators = {
+            "Apache": ["apache", "apache2"],
+            "Nginx": ["nginx"],
+            "IIS": ["iis", "microsoft-iis"],
+            "Tomcat": ["tomcat", "apache-tomcat"],
+            "Node.js": ["node", "nodejs"],
+            "LiteSpeed": ["litespeed"],
+            "OpenResty": ["openresty"]
+        }
+        
+        for server, indicators in server_indicators.items():
+            if any(indicator in str(technologies).lower() or indicator in str(headers).lower() for indicator in indicators):
+                servers.append(server)
+        
+        return servers
+
+    def _analyze_cdn(self):
+        """Analyze CDN usage"""
+        cdn_info = {
+            "provider": None,
+            "features": [],
+            "headers": []
+        }
+        
+        headers = self.results.get("headers", {})
+        
+        # Check for CDN providers
+        cdn_providers = {
+            "Cloudflare": ["cf-ray", "cf-cache-status", "cf-request-id"],
+            "Akamai": ["x-akamai-transformed", "akamai-origin-hop"],
+            "Fastly": ["fastly-io", "x-fastly"],
+            "Amazon CloudFront": ["x-amz-cf-id", "x-amz-cf-pop"],
+            "Google Cloud CDN": ["x-goog-generation", "x-goog-metageneration"]
+        }
+        
+        for provider, indicators in cdn_providers.items():
+            if any(indicator.lower() in str(headers).lower() for indicator in indicators):
+                cdn_info["provider"] = provider
+                break
+        
+        # Check for CDN features
+        if "cf-cache-status" in headers:
+            cdn_info["features"].append("Caching")
+        if "cf-wan-error" in headers:
+            cdn_info["features"].append("Error Handling")
+        
+        # Store CDN-related headers
+        cdn_headers = [header for header in headers if any(
+            cdn in header.lower() for cdn in ["cf-", "x-cdn-", "x-cache", "x-cache-status"]
+        )]
+        cdn_info["headers"] = cdn_headers
+        
+        return cdn_info
+
+    def _analyze_hosting(self):
+        """Analyze hosting infrastructure"""
+        hosting_info = {
+            "provider": None,
+            "type": None,
+            "indicators": []
+        }
+        
+        headers = self.results.get("headers", {})
+        technologies = self.results.get("technologies", {})
+        
+        # Check for hosting providers
+        hosting_providers = {
+            "AWS": ["x-amz-cf-id", "x-amz-request-id", "x-amz-id-2"],
+            "Google Cloud": ["x-goog-generation", "x-goog-metageneration"],
+            "Azure": ["x-azure-ref", "x-azure-requestid"],
+            "DigitalOcean": ["x-datacenter", "x-droplet-id"],
+            "Heroku": ["x-request-id", "x-runtime"],
+            "Cloudflare": ["cf-ray", "cf-cache-status"]
+        }
+        
+        for provider, indicators in hosting_providers.items():
+            if any(indicator.lower() in str(headers).lower() for indicator in indicators):
+                hosting_info["provider"] = provider
+                break
+        
+        # Determine hosting type
+        if "serverless" in str(technologies).lower() or "lambda" in str(technologies).lower():
+            hosting_info["type"] = "Serverless"
+        elif "kubernetes" in str(technologies).lower() or "k8s" in str(technologies).lower():
+            hosting_info["type"] = "Container"
+        elif "vps" in str(technologies).lower() or "droplet" in str(technologies).lower():
+            hosting_info["type"] = "VPS"
+        else:
+            hosting_info["type"] = "Traditional"
+        
+        return hosting_info
+
+    def _analyze_dns_setup(self):
+        """Analyze DNS configuration"""
+        dns_info = {
+            "nameservers": [],
+            "records": {},
+            "security": {
+                "spf": False,
+                "dmarc": False,
+                "dkim": False
+            }
+        }
+        
+        # Get DNS records
+        dns_records = self.results.get("dns_info", {})
+        
+        # Check nameservers
+        if "NS" in dns_records:
+            dns_info["nameservers"] = dns_records["NS"]
+        
+        # Check security records
+        if "TXT" in dns_records:
+            txt_records = dns_records["TXT"]
+            dns_info["security"]["spf"] = any("v=spf1" in record for record in txt_records)
+            dns_info["security"]["dmarc"] = any("v=DMARC1" in record for record in txt_records)
+        
+        # Store all record types
+        for record_type, records in dns_records.items():
+            if records:  # Only store non-empty records
+                dns_info["records"][record_type] = records
+        
+        return dns_info
+
+    def _analyze_email_setup(self):
+        """Analyze email configuration"""
+        email_info = {
+            "mx_records": [],
+            "spf": False,
+            "dmarc": False,
+            "dkim": False,
+            "autodiscover": False
+        }
+        
+        # Get DNS records
+        dns_records = self.results.get("dns_info", {})
+        
+        # Check MX records
+        if "MX" in dns_records:
+            email_info["mx_records"] = dns_records["MX"]
+        
+        # Check security records
+        if "TXT" in dns_records:
+            txt_records = dns_records["TXT"]
+            email_info["spf"] = any("v=spf1" in record for record in txt_records)
+            email_info["dmarc"] = any("v=DMARC1" in record for record in txt_records)
+            email_info["dkim"] = any("v=DKIM1" in record for record in txt_records)
+        
+        # Check for autodiscover
+        autodiscover_paths = [
+            "/autodiscover/autodiscover.xml",
+            "/autodiscover/autodiscover.json",
+            "/.well-known/autoconfig/mail/config-v1.1.xml"
+        ]
+        
+        for path in autodiscover_paths:
+            try:
+                response = requests.get(
+                    f"{self.target_url}{path}",
+                    headers={"User-Agent": USER_AGENT},
+                    timeout=self.timeout,
+                    verify=False
+                )
+                if response.status_code == 200:
+                    email_info["autodiscover"] = True
+                    break
+            except:
+                continue
+        
+        return email_info
+
+    def _measure_response_times(self):
+        """Measure response times for different endpoints"""
+        response_times = {
+            "main_page": None,
+            "api_endpoints": [],
+            "static_resources": []
+        }
+        
+        # Measure main page response time
+        try:
+            start_time = time.time()
+            response = requests.get(
+                self.target_url,
+                headers={"User-Agent": USER_AGENT},
+                timeout=self.timeout,
+                verify=False
+            )
+            end_time = time.time()
+            response_times["main_page"] = {
+                "time": round((end_time - start_time) * 1000, 2),  # Convert to milliseconds
+                "status_code": response.status_code
+            }
+        except:
+            pass
+        
+        # Measure API endpoint response times
+        api_endpoints = self.results.get("api_endpoints", [])
+        for endpoint in api_endpoints[:5]:  # Limit to first 5 endpoints
+            try:
+                start_time = time.time()
+                response = requests.get(
+                    endpoint["url"],
+                    headers={"User-Agent": USER_AGENT},
+                    timeout=self.timeout,
+                    verify=False
+                )
+                end_time = time.time()
+                response_times["api_endpoints"].append({
+                    "url": endpoint["url"],
+                    "time": round((end_time - start_time) * 1000, 2),
+                    "status_code": response.status_code
+                })
+            except:
+                continue
+        
+        return response_times
+
+    def _analyze_resource_usage(self):
+        """Analyze resource usage patterns"""
+        resource_usage = {
+            "content_types": {},
+            "compression": False,
+            "caching": False
+        }
+        
+        headers = self.results.get("headers", {})
+        
+        # Analyze content types
+        if "Content-Type" in headers:
+            content_type = headers["Content-Type"]
+            resource_usage["content_types"][content_type] = resource_usage["content_types"].get(content_type, 0) + 1
+        
+        # Check for compression
+        resource_usage["compression"] = any(
+            header.lower() in ["gzip", "deflate", "br"] 
+            for header in headers.get("Content-Encoding", "").lower().split(",")
+        )
+        
+        # Check for caching
+        cache_headers = ["Cache-Control", "Expires", "ETag", "Last-Modified"]
+        resource_usage["caching"] = any(header in headers for header in cache_headers)
+        
+        return resource_usage
+
+    def _analyze_caching(self):
+        """Analyze caching configuration"""
+        caching_info = {
+            "enabled": False,
+            "headers": {},
+            "directives": []
+        }
+        
+        headers = self.results.get("headers", {})
+        
+        # Check for cache headers
+        cache_headers = {
+            "Cache-Control": headers.get("Cache-Control", ""),
+            "Expires": headers.get("Expires", ""),
+            "ETag": headers.get("ETag", ""),
+            "Last-Modified": headers.get("Last-Modified", "")
+        }
+        
+        caching_info["headers"] = {k: v for k, v in cache_headers.items() if v}
+        
+        # Check if caching is enabled
+        if "Cache-Control" in headers:
+            caching_info["enabled"] = True
+            directives = headers["Cache-Control"].split(",")
+            caching_info["directives"] = [d.strip() for d in directives]
+        
+        return caching_info
+
+    def _write_csv_results(self, output_file):
+        """Write results in CSV format"""
+        import csv
+        
+        with open(output_file, 'w', newline='', encoding='utf-8') as f:
+            writer = csv.writer(f)
+            
+            # Write header
+            writer.writerow(['Category', 'Item', 'Value', 'Details'])
+            
+            # DNS Information
+            if "dns_info" in self.results:
+                for record_type, values in self.results["dns_info"].items():
+                    for value in values:
+                        writer.writerow(['DNS', record_type, value, ''])
+            
+            # Open Ports
+            if "open_ports" in self.results:
+                for port in self.results["open_ports"]:
+                    writer.writerow(['Ports', 'Open Port', port, ''])
+            
+            # Technologies
+            if "technologies" in self.results:
+                for tech, version in self.results["technologies"].items():
+                    writer.writerow(['Technologies', tech, version if isinstance(version, str) else 'Detected', ''])
+            
+            # Vulnerabilities
+            if "vulnerabilities" in self.results:
+                for vuln in self.results["vulnerabilities"]:
+                    writer.writerow([
+                        'Vulnerabilities',
+                        vuln.get('type', 'Unknown'),
+                        vuln.get('url', 'N/A'),
+                        vuln.get('details', '')
+                    ])
+            
+            # WAF Detection
+            if "waf" in self.results:
+                for waf in self.results["waf"]:
+                    writer.writerow(['WAF', 'Detected', waf, ''])
+            
+            # API Endpoints
+            if "api_endpoints" in self.results:
+                for api in self.results["api_endpoints"]:
+                    writer.writerow([
+                        'API',
+                        api.get('url', 'N/A'),
+                        api.get('status_code', 'N/A'),
+                        f"Content-Type: {api.get('content_type', 'N/A')}"
+                    ])
+            
+            # CORS Issues
+            if "cors_issues" in self.results:
+                for issue in self.results["cors_issues"]:
+                    writer.writerow([
+                        'CORS',
+                        issue.get('severity', 'N/A'),
+                        issue.get('origin', 'N/A'),
+                        issue.get('description', '')
+                    ])
+
+    def _write_txt_results(self, output_file):
+        """Write results in a formatted text file"""
+        with open(output_file, 'w', encoding='utf-8') as f:
+            f.write("=" * 80 + "\n")
+            f.write(f"Web Reconnaissance Report for {self.target_url}\n")
+            f.write("=" * 80 + "\n\n")
+            
+            # Target Information
+            f.write("Target Information\n")
+            f.write("-" * 80 + "\n")
+            f.write(f"URL: {self.target_url}\n")
+            f.write(f"Domain: {self.domain}\n")
+            f.write(f"Scan Date: {self.results.get('timestamp', 'N/A')}\n\n")
+            
+            # Security Score
+            f.write("Security Assessment\n")
+            f.write("-" * 80 + "\n")
+            f.write(f"Security Score: {self.results.get('security_score', 0)}/100\n")
+            f.write(f"Risk Level: {self.results.get('risk_level', 'Unknown')}\n\n")
+            
+            # DNS Information
+            if "dns_info" in self.results and self.results["dns_info"]:
+                f.write("DNS Information\n")
+                f.write("-" * 80 + "\n")
+                for record_type, values in self.results["dns_info"].items():
+                    if values:
+                        f.write(f"{record_type} Records:\n")
+                        for value in values:
+                            f.write(f"  - {value}\n")
+                f.write("\n")
+            
+            # Open Ports
+            if "open_ports" in self.results and self.results["open_ports"]:
+                f.write("Open Ports\n")
+                f.write("-" * 80 + "\n")
+                for port in self.results["open_ports"]:
+                    f.write(f"  - Port {port}\n")
+                f.write("\n")
+            
+            # Technologies
+            if "technologies" in self.results and self.results["technologies"]:
+                f.write("Technologies Detected\n")
+                f.write("-" * 80 + "\n")
+                for tech, version in self.results["technologies"].items():
+                    if isinstance(version, bool):
+                        version_str = "Detected"
+                    else:
+                        version_str = f"Version: {version}"
+                    f.write(f"  - {tech}: {version_str}\n")
+                f.write("\n")
+            
+            # Vulnerabilities
+            if "vulnerabilities" in self.results and self.results["vulnerabilities"]:
+                f.write("Potential Vulnerabilities\n")
+                f.write("-" * 80 + "\n")
+                for vuln in self.results["vulnerabilities"]:
+                    f.write(f"  - {vuln.get('type', 'Unknown')}: {vuln.get('url', 'N/A')}\n")
+                    if vuln.get('details'):
+                        f.write(f"    Details: {vuln['details']}\n")
+            
+            # WAF Detection
+            if "waf" in self.results and self.results["waf"]:
+                f.write("WAF Detection\n")
+                f.write("-" * 80 + "\n")
+                for waf in self.results["waf"]:
+                    f.write(f"  - {waf}\n")
+                f.write("\n")
+            
+            # API Endpoints
+            if "api_endpoints" in self.results and self.results["api_endpoints"]:
+                f.write("API Endpoints\n")
+                f.write("-" * 80 + "\n")
+                for api in self.results["api_endpoints"]:
+                    f.write(f"  - {api.get('url', 'N/A')} ({api.get('status_code', 'N/A')})\n")
+                f.write("\n")
+            
+            # CORS Issues
+            if "cors_issues" in self.results and self.results["cors_issues"]:
+                f.write("\n" + "=" * 80 + "\n")
+                f.write("CORS MISCONFIGURATIONS\n")
+                f.write("=" * 80 + "\n\n")
+                
+                for issue in self.results["cors_issues"]:
+                    f.write(f"Severity: {issue.get('severity', 'N/A')}\n")
+                    f.write(f"Origin: {issue.get('origin', 'N/A')}\n")
+                    f.write(f"Description: {issue.get('description', '')}\n")
+                    
+                    details = issue.get('details', {})
+                    if details:
+                        f.write("Details:\n")
+                        if isinstance(details, dict):
+                            if 'risk' in details:
+                                f.write(f"Risk: {details['risk']}\n")
+                            if 'recommendation' in details:
+                                f.write(f"Recommendation: {details['recommendation']}\n")
+                    
+                    f.write("\n" + "-" * 40 + "\n\n")
+                
+                # Add CORS score
+                cors_score = self.results.get('cors_score', 0)
+                f.write(f"CORS Security Score: {cors_score}/100\n")
+                f.write(f"Risk Level: {self.results.get('cors_risk_level', 'Unknown')}\n\n")
+            
+            # Recommendations
+            if "recommendations" in self.results and self.results["recommendations"]:
+                f.write("Security Recommendations\n")
+                f.write("-" * 80 + "\n")
+                for rec in self.results["recommendations"]:
+                    f.write(f"  - {rec}\n")
+                f.write("\n")
+            
+            f.write("=" * 80 + "\n")
+            f.write("End of Report\n")
+            f.write("=" * 80 + "\n")
+
+    def _fix_results(self):
+        """Fix and validate results before saving"""
+        try:
+            # Ensure all required fields exist
+            required_fields = {
+                "target": self.target_url,
+                "domain": self.domain,
+                "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                "dns_info": {},
+                "open_ports": [],
+                "technologies": {},
+                "headers": {},
+                "methods": [],
+                "ssl_info": {},
+                "directories": [],
+                "robots_sitemap": {},
+                "security_score": 0,
+                "risk_level": "Unknown",
+                "recommendations": []
+            }
+            
+            # Add missing required fields
+            for field, default_value in required_fields.items():
+                if field not in self.results:
+                    self.results[field] = default_value
+            
+            # Fix DNS info
+            if isinstance(self.results["dns_info"], dict):
+                for record_type, values in self.results["dns_info"].items():
+                    if not isinstance(values, list):
+                        self.results["dns_info"][record_type] = []
+            
+            # Fix open ports
+            if not isinstance(self.results["open_ports"], list):
+                self.results["open_ports"] = []
+            self.results["open_ports"] = [int(port) for port in self.results["open_ports"] if str(port).isdigit()]
+            
+            # Fix technologies
+            if not isinstance(self.results["technologies"], dict):
+                self.results["technologies"] = {}
+            
+            # Fix headers
+            if not isinstance(self.results["headers"], dict):
+                self.results["headers"] = {}
+            
+            # Fix methods
+            if not isinstance(self.results["methods"], list):
+                self.results["methods"] = []
+            
+            # Fix SSL info
+            if not isinstance(self.results["ssl_info"], dict):
+                self.results["ssl_info"] = {}
+            
+            # Fix directories
+            if not isinstance(self.results["directories"], list):
+                self.results["directories"] = []
+            
+            # Fix robots_sitemap
+            if not isinstance(self.results["robots_sitemap"], dict):
+                self.results["robots_sitemap"] = {}
+            
+            # Fix security score
+            try:
+                self.results["security_score"] = int(self.results["security_score"])
+            except (ValueError, TypeError):
+                self.results["security_score"] = 0
+            
+            # Fix risk level
+            valid_risk_levels = ["Unknown", "Low", "Medium", "High", "Critical"]
+            if self.results["risk_level"] not in valid_risk_levels:
+                self.results["risk_level"] = "Unknown"
+            
+            # Fix recommendations
+            if not isinstance(self.results["recommendations"], list):
+                self.results["recommendations"] = []
+            
+            # Remove any None values
+            def clean_dict(d):
+                if isinstance(d, dict):
+                    return {k: clean_dict(v) for k, v in d.items() if v is not None}
+                elif isinstance(d, list):
+                    return [clean_dict(x) for x in d if x is not None]
+                return d
+            
+            self.results = clean_dict(self.results)
+            
+            # Ensure all string values are properly encoded
+            def encode_strings(obj):
+                if isinstance(obj, str):
+                    return obj.encode('utf-8', 'ignore').decode('utf-8')
+                elif isinstance(obj, dict):
+                    return {k: encode_strings(v) for k, v in obj.items()}
+                elif isinstance(obj, list):
+                    return [encode_strings(x) for x in obj]
+                return obj
+            
+            self.results = encode_strings(self.results)
+            
+            # Add metadata
+            self.results["metadata"] = {
+                "tool_version": VERSION,
+                "scan_date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                "scan_duration": getattr(self, '_scan_duration', 0),
+                "target_url": self.target_url,
+                "domain": self.domain
+            }
+            
+            return True
+            
+        except Exception as e:
+            ColorOutput.error(f"Error fixing results: {str(e)}")
+            if self.verbose:
+                import traceback
+                ColorOutput.error(traceback.format_exc())
+            return False
+
+    @lru_cache(maxsize=128)
     def _dns_query(self, domain, record_type):
-        """Cached DNS query with rate limiting"""
+        """Cached DNS query with rate limiting and error handling"""
         # Apply rate limiting
         self.dns_limiter.acquire()
         
         try:
+            if self.verbose:
+                ColorOutput.info(f"Querying {record_type} records for {domain}")
+            
             answers = dns.resolver.resolve(domain, record_type)
-            return [str(rdata) for rdata in answers]
-        except Exception:
-            return []
+            results = [str(rdata) for rdata in answers]
+            
+            if self.verbose:
+                ColorOutput.info(f"Found {len(results)} {record_type} records")
+            
+            return tuple(results)  # Convert to tuple for caching
+        except dns.resolver.NoAnswer:
+            if self.verbose:
+                ColorOutput.warning(f"No {record_type} records found for {domain}")
+            return tuple()  # Return empty tuple for caching
+        except dns.resolver.NXDOMAIN:
+            ColorOutput.error(f"Domain {domain} does not exist")
+            return tuple()  # Return empty tuple for caching
+        except dns.resolver.Timeout:
+            ColorOutput.error(f"DNS query timed out for {domain}")
+            return tuple()  # Return empty tuple for caching
+        except dns.resolver.NoNameservers:
+            ColorOutput.error(f"No nameservers found for {domain}")
+            return tuple()  # Return empty tuple for caching
+        except Exception as e:
+            ColorOutput.error(f"Error querying {record_type} records for {domain}: {str(e)}")
+            if self.verbose:
+                import traceback
+                ColorOutput.error(traceback.format_exc())
+            return tuple()  # Return empty tuple for caching
 
     def _get_cached_response(self, url, method="GET", headers=None):
         """Get cached response if available and not expired"""
@@ -513,17 +1734,29 @@ class ADVWebRecon:
         self.http_limiter.acquire()
         
         try:
+            # Add debug logging
+            if self.verbose:
+                ColorOutput.info(f"Making {method} request to {url}")
+                if headers:
+                    ColorOutput.info(f"Headers: {headers}")
+            
             response = self.session.request(
                 method,
                 url,
                 headers=headers,
                 timeout=timeout,
+                verify=verify,
                 allow_redirects=allow_redirects
             )
             
             # Cache successful responses
             if response.status_code == 200:
                 self._cache_response(url, method, headers, response)
+            
+            # Add debug logging for response
+            if self.verbose:
+                ColorOutput.info(f"Response status: {response.status_code}")
+                ColorOutput.info(f"Response headers: {dict(response.headers)}")
             
             return response
         except requests.exceptions.Timeout:
@@ -534,6 +1767,12 @@ class ADVWebRecon:
             return None
         except requests.exceptions.RequestException as e:
             ColorOutput.error(f"Request failed: {url} - {str(e)}")
+            return None
+        except Exception as e:
+            ColorOutput.error(f"Unexpected error during request: {url} - {str(e)}")
+            if self.verbose:
+                import traceback
+                ColorOutput.error(traceback.format_exc())
             return None
 
     def _dns_enumeration(self):
@@ -666,10 +1905,7 @@ class ADVWebRecon:
         self.results["open_ports"] = open_ports
     
     def _analyze_headers(self):
-        """
-        Analyze HTTP headers for security issues, information disclosure,
-        and misconfiguration. Provides detailed reporting on findings.
-        """
+        """Analyze HTTP headers for security issues, information disclosure, and misconfiguration"""
         ColorOutput.section("HTTP Headers Analysis")
         
         response = self._make_request(self.target_url)
@@ -677,6 +1913,119 @@ class ADVWebRecon:
             return
         
         ColorOutput.info(f"HTTP Status: {response.status_code} ({response.reason})")
+        
+        # Enhanced cookie analysis
+        if response.cookies:
+            ColorOutput.section("Cookie Analysis")
+            for cookie in response.cookies:
+                issues = []
+                recommendations = []
+                
+                # Build detailed cookie info
+                cookie_info = [f"Cookie: {cookie.name}"]
+                
+                # Check for secure attributes
+                if not cookie.secure:
+                    issues.append("missing Secure flag")
+                    recommendations.append("Add Secure flag to prevent cookie transmission over unencrypted connections")
+                
+                if not getattr(cookie, 'httponly', False):
+                    issues.append("missing HttpOnly flag")
+                    recommendations.append("Add HttpOnly flag to prevent JavaScript access to the cookie")
+                
+                # Check SameSite attribute
+                samesite = None
+                if hasattr(cookie, '_rest'):
+                    for attr in cookie._rest:
+                        if attr.lower() == 'samesite':
+                            samesite = cookie._rest[attr]
+                
+                if not samesite:
+                    issues.append("missing SameSite attribute")
+                    recommendations.append("Add SameSite attribute (preferably 'Strict' or 'Lax') to prevent CSRF attacks")
+                elif samesite.lower() not in ['strict', 'lax', 'none']:
+                    issues.append(f"invalid SameSite value: {samesite}")
+                    recommendations.append("Set SameSite to 'Strict' or 'Lax' for better security")
+                elif samesite.lower() == 'none' and not cookie.secure:
+                    issues.append("SameSite=None without Secure flag")
+                    recommendations.append("When using SameSite=None, the Secure flag must be set")
+                
+                # Check expiration
+                if cookie.expires:
+                    from datetime import datetime
+                    expiry_date = datetime.fromtimestamp(cookie.expires)
+                    now = datetime.now()
+                    days_until_expiry = (expiry_date - now).days
+                    
+                    if days_until_expiry > 365:
+                        issues.append(f"long expiration time ({days_until_expiry} days)")
+                        recommendations.append("Consider reducing cookie expiration time for better security")
+                    elif days_until_expiry < 0:
+                        issues.append("cookie has expired")
+                        recommendations.append("Remove expired cookies")
+                    
+                    cookie_info.append(f"expires in {days_until_expiry} days")
+                
+                # Check for potential session cookies
+                if cookie.name.lower() in ['sessionid', 'session', 'sid', 'jsessionid', 'phpsessid', 'aspsessionid']:
+                    if cookie.expires:
+                        issues.append("session cookie with explicit expiration")
+                        recommendations.append("Session cookies should not have explicit expiration times")
+                    if not cookie.secure:
+                        recommendations.append("Session cookies should always use the Secure flag")
+                    if not getattr(cookie, 'httponly', False):
+                        recommendations.append("Session cookies should always use the HttpOnly flag")
+                
+                # Check path
+                if cookie.path == "/" or not cookie.path:
+                    cookie_info.append("path=/")
+                    if cookie.name.lower() in ['sessionid', 'session', 'sid', 'jsessionid', 'phpsessid', 'aspsessionid']:
+                        recommendations.append("Consider restricting session cookie path to specific application paths")
+                
+                # Check domain
+                if cookie.domain:
+                    if cookie.domain.startswith('.'):
+                        cookie_info.append(f"domain={cookie.domain}")
+                        issues.append("wildcard domain")
+                        recommendations.append("Avoid using wildcard domains for cookies unless necessary")
+                    else:
+                        cookie_info.append(f"domain={cookie.domain}")
+                
+                # Check for sensitive cookie names
+                sensitive_names = ['auth', 'token', 'key', 'secret', 'password', 'credential', 'session']
+                if any(name in cookie.name.lower() for name in sensitive_names):
+                    if not cookie.secure:
+                        recommendations.append("Sensitive cookies should always use the Secure flag")
+                    if not getattr(cookie, 'httponly', False):
+                        recommendations.append("Sensitive cookies should always use the HttpOnly flag")
+                    if not samesite or samesite.lower() != 'strict':
+                        recommendations.append("Sensitive cookies should use SameSite=Strict")
+                
+                # Output results
+                if issues:
+                    ColorOutput.warning(f"{' | '.join(cookie_info)} - Issues: {', '.join(issues)}")
+                    if recommendations:
+                        ColorOutput.info("Recommendations:")
+                        for rec in recommendations:
+                            ColorOutput.info(f"  └─ {rec}")
+                else:
+                    ColorOutput.success(f"{' | '.join(cookie_info)} - Properly configured")
+                
+                # Store cookie analysis in results
+                if "cookie_analysis" not in self.results:
+                    self.results["cookie_analysis"] = []
+                
+                self.results["cookie_analysis"].append({
+                    "name": cookie.name,
+                    "domain": cookie.domain,
+                    "path": cookie.path,
+                    "secure": cookie.secure,
+                    "httponly": getattr(cookie, 'httponly', False),
+                    "samesite": samesite,
+                    "expires": str(expiry_date) if cookie.expires else None,
+                    "issues": issues,
+                    "recommendations": recommendations
+                })
         
         # Expanded list of sensitive headers that might reveal information
         sensitive_headers = [
@@ -877,108 +2226,6 @@ class ADVWebRecon:
                     ColorOutput.info(f"Missing security header: {header}")
                     ColorOutput.info(f"  └─ Purpose: {details['description']}")
         
-        # Enhanced cookie analysis
-        if response.cookies:
-            ColorOutput.section("Cookie Analysis")
-            for cookie in response.cookies:
-                issues = []
-                
-                # Build detailed cookie info
-                cookie_info = [f"Cookie: {cookie.name}"]
-                
-                # Check for secure attributes
-                if not cookie.secure:
-                    issues.append("missing Secure flag")
-                if not cookie.has_nonstandard_attr('HttpOnly'):
-                    issues.append("missing HttpOnly flag")
-                
-                # Check SameSite attribute
-                samesite = None
-                for attr in cookie._rest:
-                    if attr.lower() == 'samesite':
-                        samesite = cookie._rest[attr]
-                
-                if not samesite:
-                    issues.append("missing SameSite attribute")
-                elif samesite.lower() not in ['strict', 'lax', 'none']:
-                    issues.append(f"invalid SameSite value: {samesite}")
-                elif samesite.lower() == 'none' and not cookie.secure:
-                    issues.append("SameSite=None without Secure flag")
-                
-                # Check expiration
-                if cookie.expires:
-                    from datetime import datetime
-                    expiry_date = datetime.fromtimestamp(cookie.expires)
-                    now = datetime.now()
-                    days_until_expiry = (expiry_date - now).days
-                    
-                    if days_until_expiry > 365:
-                        issues.append(f"long expiration time ({days_until_expiry} days)")
-                    
-                    cookie_info.append(f"expires in {days_until_expiry} days")
-                
-                # Check for potential session cookies
-                if cookie.name.lower() in ['sessionid', 'session', 'sid', 'jsessionid', 'phpsessid', 'aspsessionid']:
-                    if cookie.expires:
-                        issues.append("session cookie with explicit expiration")
-                
-                # Check path
-                if cookie.path == "/" or not cookie.path:
-                    cookie_info.append("path=/")
-                    
-                # Check domain
-                if cookie.domain:
-                    if cookie.domain.startswith('.'):
-                        cookie_info.append(f"domain={cookie.domain}")
-                        issues.append("wildcard domain")
-                    else:
-                        cookie_info.append(f"domain={cookie.domain}")
-                
-                # Output results
-                if issues:
-                    ColorOutput.warning(f"{' | '.join(cookie_info)} - Issues: {', '.join(issues)}")
-                else:
-                    ColorOutput.success(f"{' | '.join(cookie_info)} - Properly configured")
-                    
-        # Server fingerprinting
-        if "Server" in response.headers:
-            server = response.headers["Server"]
-            if len(server) > 1:  # Not just a single character to hide server info
-                ColorOutput.attention(f"Server header reveals: {server}")
-                
-                # Check for version information in server header
-                import re
-                version_pattern = re.compile(r'[\d\.]+')
-                if version_pattern.search(server):
-                    ColorOutput.warning("Server header contains version information")
-                    
-        # Response analysis based on status code
-        if response.status_code >= 400:
-            if len(response.text) > 100:  # Arbitrary length to detect verbose error messages
-                ColorOutput.warning("Response may contain verbose error information")
-        
-        # Detect WAF presence
-        waf_headers = [
-            "X-Sucuri-ID", "X-Sucuri-Cache", "X-CDN", "X-Varnish",
-            "X-Cloudflare", "X-Powered-By-Plesk", "CF-Ray", "CF-Cache-Status",
-            "X-Akamai-Transformed", "X-Akamai-Debug-Host", "X-Cache",
-            "X-ModSecurity", "X-FW-Server", "X-FW-Dynamic", "X-FW-Static",
-            "X-FW-Blocktype", "X-FW-Block", "X-Distil-CS"
-        ]
-        
-        waf_detected = False
-        for waf_header in waf_headers:
-            if waf_header in response.headers:
-                if not waf_detected:
-                    ColorOutput.info("Web Application Firewall (WAF) detection:")
-                    waf_detected = True
-                ColorOutput.success(f"WAF detected: {waf_header}: {response.headers[waf_header]}")
-                
-        # Server timing headers (performance insights)
-        if "Server-Timing" in response.headers:
-            ColorOutput.info(f"Server-Timing header found: {response.headers['Server-Timing']}")
-            ColorOutput.info("  └─ May reveal internal timing information")
-            
         # Check for feature policies
         if "Feature-Policy" in response.headers:
             ColorOutput.info("Feature-Policy header (deprecated) found")
@@ -1118,81 +2365,225 @@ class ADVWebRecon:
             
             context = ssl.create_default_context()
             context.check_hostname = False
-            context.verify_mode = ssl.CERT_NONE  # Changed from CERT_OPTIONAL to CERT_NONE
+            context.verify_mode = ssl.CERT_OPTIONAL
             
             ColorOutput.info(f"Connecting to {hostname}:{port}...")
             
             with socket.create_connection((hostname, port), timeout=self.timeout) as sock:
                 with context.wrap_socket(sock, server_hostname=hostname) as ssock:
-                    cert = ssock.getpeercert(binary_form=False)
-                    if cert is None:
-                        ColorOutput.error("Could not retrieve SSL certificate")
-                        return
-                        
+                    cert = ssock.getpeercert()
                     cipher = ssock.cipher()
                     version = ssock.version()
                     
                     # Extract certificate information
-                    try:
-                        not_before = datetime.strptime(cert['notBefore'], "%b %d %H:%M:%S %Y %Z")
-                        not_after = datetime.strptime(cert['notAfter'], "%b %d %H:%M:%S %Y %Z")
-                        issuer = dict(x[0] for x in cert['issuer'])
-                        subject = dict(x[0] for x in cert['subject'])
-                    except (KeyError, ValueError) as e:
-                        ColorOutput.error(f"Error parsing certificate dates: {str(e)}")
-                        return
+                    not_before = datetime.strptime(cert['notBefore'], "%b %d %H:%M:%S %Y %Z")
+                    not_after = datetime.strptime(cert['notAfter'], "%b %d %H:%M:%S %Y %Z")
+                    issuer = dict(x[0] for x in cert['issuer'])
+                    subject = dict(x[0] for x in cert['subject'])
                     
                     # Check certificate expiration
                     now = datetime.now()
                     days_left = (not_after - now).days
                     
-                    self.results["ssl_info"] = {
+                    # Initialize SSL info dictionary
+                    ssl_info = {
                         "version": version,
-                        "cipher": cipher[0],
+                        "cipher": {
+                            "name": cipher[0],
+                            "version": cipher[1],
+                            "bits": cipher[2]
+                        },
                         "issuer": issuer.get('organizationName', 'Unknown'),
                         "subject": subject.get('commonName', 'Unknown'),
                         "valid_from": str(not_before),
                         "valid_until": str(not_after),
-                        "days_remaining": days_left
+                        "days_remaining": days_left,
+                        "issues": [],
+                        "recommendations": []
                     }
                     
-                    ColorOutput.success(f"SSL/TLS Version: {version}")
-                    ColorOutput.success(f"Cipher: {cipher[0]}")
-                    ColorOutput.success(f"Issuer: {issuer.get('organizationName', 'Unknown')}")
-                    ColorOutput.success(f"Subject: {subject.get('commonName', 'Unknown')}")
-                    ColorOutput.success(f"Valid From: {not_before}")
-                    ColorOutput.success(f"Valid Until: {not_after}")
+                    # Display basic SSL/TLS information
+                    ColorOutput.section("Certificate Information")
+                    ColorOutput.key_value("SSL/TLS Version", version)
+                    ColorOutput.key_value("Cipher Suite", f"{cipher[0]} ({cipher[2]} bits)")
+                    ColorOutput.key_value("Issuer", issuer.get('organizationName', 'Unknown'))
+                    ColorOutput.key_value("Subject", subject.get('commonName', 'Unknown'))
+                    ColorOutput.key_value("Valid From", str(not_before))
+                    ColorOutput.key_value("Valid Until", str(not_after))
                     
+                    # Certificate expiration check
                     if days_left < 0:
                         ColorOutput.error(f"Certificate EXPIRED ({abs(days_left)} days ago)")
+                        ssl_info["issues"].append({
+                            "severity": "Critical",
+                            "description": f"Certificate expired {abs(days_left)} days ago",
+                            "recommendation": "Renew the SSL certificate immediately"
+                        })
                     elif days_left < 30:
                         ColorOutput.warning(f"Certificate expires soon ({days_left} days remaining)")
+                        ssl_info["issues"].append({
+                            "severity": "High",
+                            "description": f"Certificate expires in {days_left} days",
+                            "recommendation": "Plan certificate renewal"
+                        })
                     else:
                         ColorOutput.success(f"Certificate valid ({days_left} days remaining)")
                     
-                    # Check for weak protocols
-                    weak_protocols = ["TLSv1", "TLSv1.1", "SSLv3", "SSLv2"]
-                    if any(proto in version for proto in weak_protocols):
-                        ColorOutput.warning(f"Weak protocol detected: {version}")
+                    # Protocol security checks
+                    ColorOutput.section("Protocol Security")
+                    weak_protocols = {
+                        "TLSv1": "TLS 1.0 is considered insecure",
+                        "TLSv1.1": "TLS 1.1 is considered insecure",
+                        "SSLv3": "SSL 3.0 is considered insecure",
+                        "SSLv2": "SSL 2.0 is considered insecure"
+                    }
                     
-                    # Check for domain mismatch
+                    for proto, reason in weak_protocols.items():
+                        if proto in version:
+                            ColorOutput.warning(f"Weak protocol detected: {version}")
+                            ssl_info["issues"].append({
+                                "severity": "High",
+                                "description": f"Using {proto} - {reason}",
+                                "recommendation": "Upgrade to TLS 1.2 or higher"
+                            })
+                    
+                    # Cipher security checks
+                    ColorOutput.section("Cipher Security")
+                    weak_ciphers = {
+                        "RC4": "RC4 is considered insecure",
+                        "DES": "DES is considered insecure",
+                        "3DES": "3DES is considered weak",
+                        "NULL": "NULL cipher provides no encryption",
+                        "EXPORT": "Export-grade ciphers are weak"
+                    }
+                    
+                    for weak_cipher, reason in weak_ciphers.items():
+                        if weak_cipher in cipher[0]:
+                            ColorOutput.warning(f"Weak cipher detected: {cipher[0]}")
+                            ssl_info["issues"].append({
+                                "severity": "High",
+                                "description": f"Using {weak_cipher} - {reason}",
+                                "recommendation": "Use strong ciphers (AES-GCM, ChaCha20)"
+                            })
+                    
+                    # Check key strength
+                    if cipher[2] < 128:
+                        ColorOutput.warning(f"Weak key length: {cipher[2]} bits")
+                        ssl_info["issues"].append({
+                            "severity": "High",
+                            "description": f"Using weak key length ({cipher[2]} bits)",
+                            "recommendation": "Use at least 128-bit keys"
+                        })
+                    
+                    # Domain validation checks
+                    ColorOutput.section("Domain Validation")
                     alt_names = []
                     if 'subjectAltName' in cert:
                         for type_name, value in cert['subjectAltName']:
                             if type_name == 'DNS':
                                 alt_names.append(value)
                     
-                    self.results["ssl_info"]["subject_alt_names"] = alt_names
+                    ssl_info["subject_alt_names"] = alt_names
                     
                     if hostname not in subject.get('commonName', '') and not any(hostname == name for name in alt_names):
                         ColorOutput.warning(f"Hostname mismatch: {hostname} not found in certificate")
-        
+                        ssl_info["issues"].append({
+                            "severity": "High",
+                            "description": f"Hostname {hostname} not found in certificate",
+                            "recommendation": "Add hostname to certificate's Subject Alternative Names"
+                        })
+                    
+                    # Generate recommendations
+                    if not ssl_info["issues"]:
+                        ssl_info["recommendations"].append({
+                            "priority": "Low",
+                            "description": "SSL/TLS configuration is secure",
+                            "action": "Maintain current security practices"
+                        })
+                    else:
+                        for issue in ssl_info["issues"]:
+                            ssl_info["recommendations"].append({
+                                "priority": issue["severity"],
+                                "description": issue["description"],
+                                "action": issue["recommendation"]
+                            })
+                    
+                    # Calculate SSL score
+                    ssl_score = 100
+                    for issue in ssl_info["issues"]:
+                        if issue["severity"] == "Critical":
+                            ssl_score -= 40
+                        elif issue["severity"] == "High":
+                            ssl_score -= 20
+                        elif issue["severity"] == "Medium":
+                            ssl_score -= 10
+                        elif issue["severity"] == "Low":
+                            ssl_score -= 5
+                    
+                    ssl_score = max(0, ssl_score)
+                    ssl_info["score"] = ssl_score
+                    
+                    # Display SSL score
+                    ColorOutput.section("SSL/TLS Security Score")
+                    score_bar = '█' * (ssl_score // 10) + '░' * (10 - (ssl_score // 10))
+                    print(f"{ColorOutput.BOLD}Score: {ColorOutput.ENDC}[{score_bar}] {ssl_score}%")
+                    
+                    # Display issues if any
+                    if ssl_info["issues"]:
+                        ColorOutput.section("Security Issues")
+                        headers = ["Severity", "Description", "Recommendation"]
+                        rows = []
+                        for issue in ssl_info["issues"]:
+                            severity_color = {
+                                "Critical": ColorOutput.RED,
+                                "High": ColorOutput.RED,
+                                "Medium": ColorOutput.YELLOW,
+                                "Low": ColorOutput.BLUE
+                            }.get(issue["severity"], ColorOutput.ENDC)
+                            
+                            rows.append([
+                                f"{severity_color}{issue['severity']}{ColorOutput.ENDC}",
+                                issue["description"],
+                                issue["recommendation"]
+                            ])
+                        ColorOutput.table(headers, rows)
+                    
+                    # Store results
+                    self.results["ssl_info"] = ssl_info
+                    
         except ssl.SSLError as e:
             ColorOutput.error(f"SSL Error: {str(e)}")
+            self.results["ssl_info"] = {
+                "error": str(e),
+                "issues": [{
+                    "severity": "Critical",
+                    "description": f"SSL Error: {str(e)}",
+                    "recommendation": "Check SSL/TLS configuration"
+                }],
+                "score": 0
+            }
         except socket.error as e:
             ColorOutput.error(f"Socket Error: {str(e)}")
+            self.results["ssl_info"] = {
+                "error": str(e),
+                "issues": [{
+                    "severity": "Critical",
+                    "description": f"Connection Error: {str(e)}",
+                    "recommendation": "Check network connectivity and server availability"
+                }],
+                "score": 0
+            }
         except Exception as e:
             ColorOutput.error(f"Error analyzing SSL/TLS: {str(e)}")
+            self.results["ssl_info"] = {
+                "error": str(e),
+                "issues": [{
+                    "severity": "Critical",
+                    "description": f"Analysis Error: {str(e)}",
+                    "recommendation": "Check server configuration and try again"
+                }],
+                "score": 0
+            }
     
     def _check_robots_sitemap(self):
         """Check robots.txt and sitemap.xml"""
@@ -1283,90 +2674,223 @@ class ADVWebRecon:
                     except Exception as e:
                         if self.verbose:
                             ColorOutput.error(f"Error in directory discovery: {str(e)}")
-            
-            # Add a small delay between chunks to avoid overwhelming the server
-            if i + chunk_size < len(COMMON_DIRS):
-                time.sleep(1)  # Increased delay to respect rate limits
+                
+                # Add a small delay between chunks to avoid overwhelming the server
+                if i + chunk_size < len(COMMON_DIRS):
+                    time.sleep(1)  # Increased delay to respect rate limits
         
         self.results["directories"] = found_dirs
     
     def _check_directory(self, url, directory):
-        """Check if a directory exists"""
-        response = self._make_request(url, allow_redirects=False)
-        if not response:
+        """Check if a directory exists with improved error handling"""
+        try:
+            response = self._make_request(url, allow_redirects=False)
+            if not response:
+                return None
+            
+            # Consider 2xx, 3xx, and some 4xx as "found"
+            if response.status_code < 404 or response.status_code in [401, 403]:
+                status_info = ""
+                if response.status_code == 200:  # OK
+                    status_info = "OK"
+                elif response.status_code == 401:  # Unauthorized
+                    status_info = "Unauthorized"
+                elif response.status_code == 403:  # Forbidden
+                    status_info = "Forbidden"
+                elif 300 <= response.status_code < 400:  # Redirect
+                    status_info = f"Redirect to {response.headers.get('Location', 'unknown')}"
+                
+                ColorOutput.success(f"/{directory}/ - Found (Status: {response.status_code} {status_info})")
+                
+                return {
+                    "path": f"/{directory}/",
+                    "status_code": response.status_code,
+                    "content_type": response.headers.get("Content-Type", "unknown"),
+                    "content_length": len(response.content)
+                }
+            
             return None
-        
-        # Consider 2xx, 3xx, and some 4xx as "found"
-        if response.status_code < 404 or response.status_code in [401, 403]:
-            status_info = ""
-            if response.status_code == 200:  # OK
-                status_info = "OK"
-            elif response.status_code == 401:  # Unauthorized
-                status_info = "Unauthorized"
-            elif response.status_code == 403:  # Forbidden
-                status_info = "Forbidden"
-            elif 300 <= response.status_code < 400:  # Redirect
-                status_info = f"Redirect to {response.headers.get('Location', 'unknown')}"
-            
-            ColorOutput.success(f"/{directory}/ - Found (Status: {response.status_code} {status_info})")
-            
-            return {
-                "path": f"/{directory}/",
-                "status_code": response.status_code,
-                "content_type": response.headers.get("Content-Type", "unknown"),
-                "content_length": len(response.content)
-            }
-        
-        return None
+        except Exception as e:
+            if self.verbose:
+                ColorOutput.error(f"Error checking directory {directory}: {str(e)}")
+                import traceback
+                ColorOutput.error(traceback.format_exc())
+            return None
 
     def _advanced_fingerprinting(self):
         """Advanced web technology fingerprinting"""
         ColorOutput.section("Advanced Technology Fingerprinting")
         
         try:
-            response = requests.get(
+            response = self._make_request(
                 self.target_url,
                 headers={"User-Agent": USER_AGENT},
-                timeout=self.timeout,
                 verify=False
             )
             
-            # Extract JavaScript library references
-            js_patterns = {
+            if not response:
+                return
+
+            # Comprehensive technology signatures
+            tech_signatures = {
+                "PHP": ["X-Powered-By: PHP", "Set-Cookie: PHPSESSID"],
+                "ASP.NET": ["X-AspNet-Version", "ASP.NET", "X-AspNetMvc-Version", "Set-Cookie: ASP.NET_SessionId"],
+                "Apache": ["Server: Apache"],
+                "nginx": ["Server: nginx"],
+                "Express.js": ["X-Powered-By: Express"],
+                "Django": ["X-Frame-Options: SAMEORIGIN", "Vary: Cookie", "Set-Cookie: sessionid"],
+                "Ruby on Rails": ["X-Runtime", "X-Powered-By: Rails", "Set-Cookie: _rails_session"],
+                "Laravel": ["Set-Cookie: laravel_session", "X-Powered-By: PHP"],
+                "WordPress": ["wp-content", "wp-includes", "WordPress", "Set-Cookie: wordpress_"],
+                "Drupal": ["X-Generator: Drupal", "X-Drupal-", "Set-Cookie: SESS"],
+                "Joomla": ["Set-Cookie: joomla", "X-Content-Encoded-By: Joomla"],
+                "Tomcat": ["Server: Apache-Coyote", "Set-Cookie: JSESSIONID"],
+                "IIS": ["Server: Microsoft-IIS", "X-Powered-By: ASP.NET"],
+                "GlassFish": ["Server: GlassFish"],
+                "WebLogic": ["Server: WebLogic"],
+                "Node.js": ["X-Powered-By: Node.js", "X-Powered-By: Express"],
+                "Flask": ["Set-Cookie: session", "Server: Werkzeug"],
+                "Magento": ["Set-Cookie: frontend", "X-Magento-Cache-Debug"],
+                "Shopify": ["X-ShopId", "X-Shopify-Stage"],
+                "Google Frontend": ["Server: GSE", "X-Goog-Backend-Server"],
+                "Cloudflare": ["Server: cloudflare", "CF-RAY"],
+                "Varnish": ["Server: Varnish", "X-Varnish"],
+                "Squid": ["Server: squid"],
+                "HAProxy": ["Server: haproxy"],
+                "LiteSpeed": ["Server: LiteSpeed"],
+                "OpenResty": ["Server: openresty"],
+                "Elasticsearch": ["X-Elastic-Product", "Server: Elasticsearch"],
+                "Kubernetes": ["Server: kube-proxy"],
+                "Traefik": ["Server: traefik"],
+                "Caddy": ["Server: Caddy"],
+                "Next.js": ["X-Powered-By: Next.js"],
+                "React": ["X-Powered-By: React"],
+                "Angular": ["X-Powered-By: Angular"],
+                "Vue.js": ["X-Powered-By: Vue"],
+            }
+
+            # Additional JavaScript framework patterns
+            js_frameworks = {
                 "jQuery": r'jquery[.-](\d+\.\d+\.\d+)',
                 "React": r'react[.-](\d+\.\d+\.\d+)',
                 "Angular": r'angular[.-](\d+\.\d+\.\d+)',
                 "Vue.js": r'vue[.-](\d+\.\d+\.\d+)',
                 "Bootstrap": r'bootstrap[.-](\d+\.\d+\.\d+)',
                 "Lodash": r'lodash[.-](\d+\.\d+\.\d+)',
+                "Moment.js": r'moment[.-](\d+\.\d+\.\d+)',
+                "Underscore.js": r'underscore[.-](\d+\.\d+\.\d+)',
+                "Ember.js": r'ember[.-](\d+\.\d+\.\d+)',
+                "Backbone.js": r'backbone[.-](\d+\.\d+\.\d+)',
+                "Knockout.js": r'knockout[.-](\d+\.\d+\.\d+)',
+                "Dojo": r'dojo[.-](\d+\.\d+\.\d+)',
+                "ExtJS": r'ext[.-](\d+\.\d+\.\d+)',
+                "Prototype": r'prototype[.-](\d+\.\d+\.\d+)',
+                "MooTools": r'mootools[.-](\d+\.\d+\.\d+)',
             }
-            
-            for tech, pattern in js_patterns.items():
-                matches = re.findall(pattern, response.text, re.IGNORECASE)
-                if matches:
-                    version = matches[0]
-                    ColorOutput.success(f"Detected {tech} version {version}")
-                    self.results["technologies"][tech] = version
-            
-            # Check for common frameworks by HTML patterns
-            framework_patterns = {
+
+            # Additional CMS patterns
+            cms_patterns = {
                 "WordPress": [r'wp-content', r'wp-includes', r'wordpress'],
                 "Drupal": [r'drupal\.js', r'drupal\.css', r'Drupal\.settings'],
                 "Joomla": [r'joomla', r'com_content', r'com_contact'],
                 "Magento": [r'magento', r'Mage\.', r'skin/frontend'],
                 "Laravel": [r'laravel', r'csrf-token'],
                 "Django": [r'csrfmiddlewaretoken', r'django'],
+                "Shopify": [r'shopify', r'shopify\.com'],
+                "WooCommerce": [r'woocommerce', r'wc-api'],
+                "PrestaShop": [r'prestashop', r'presta-'],
+                "OpenCart": [r'opencart', r'route=common'],
+                "TYPO3": [r'typo3', r'typo3conf'],
+                "Concrete5": [r'concrete5', r'concrete'],
+                "Craft CMS": [r'craft', r'craftcms'],
+                "ExpressionEngine": [r'expressionengine', r'ee\.'],
+                "MODX": [r'modx', r'assets/snippets'],
             }
-            
-            for framework, patterns in framework_patterns.items():
+
+            detected_techs = {}
+            response_text = response.text.lower()
+            headers_str = str(response.headers).lower()
+            cookies_str = str(response.cookies).lower()
+
+            # Check technology signatures
+            for tech, signatures in tech_signatures.items():
+                for signature in signatures:
+                    sig_lower = signature.lower()
+                    if sig_lower in headers_str or sig_lower in cookies_str:
+                        if tech not in detected_techs:
+                            detected_techs[tech] = True
+                            ColorOutput.success(f"Detected {tech}")
+                            break
+
+            # Check JavaScript frameworks
+            for framework, pattern in js_frameworks.items():
+                matches = re.findall(pattern, response_text, re.IGNORECASE)
+                if matches:
+                    version = matches[0]
+                    detected_techs[framework] = version
+                    ColorOutput.success(f"Detected {framework} version {version}")
+
+            # Check CMS patterns
+            for cms, patterns in cms_patterns.items():
                 for pattern in patterns:
-                    if re.search(pattern, response.text, re.IGNORECASE):
-                        ColorOutput.success(f"Detected {framework} framework")
-                        self.results["technologies"][framework] = True
-                        break
-                        
+                    if re.search(pattern, response_text, re.IGNORECASE):
+                        if cms not in detected_techs:
+                            detected_techs[cms] = True
+                            ColorOutput.success(f"Detected {cms}")
+                            break
+
+            # Check for security headers and their versions
+            security_headers = {
+                "Content-Security-Policy": "CSP",
+                "X-Frame-Options": "Frame Protection",
+                "X-Content-Type-Options": "MIME Protection",
+                "X-XSS-Protection": "XSS Protection",
+                "Strict-Transport-Security": "HSTS",
+                "Referrer-Policy": "Referrer Policy",
+                "Permissions-Policy": "Permissions Policy",
+                "Cross-Origin-Embedder-Policy": "COEP",
+                "Cross-Origin-Opener-Policy": "COOP",
+                "Cross-Origin-Resource-Policy": "CORP"
+            }
+
+            for header, description in security_headers.items():
+                if header in response.headers:
+                    value = response.headers[header]
+                    detected_techs[f"{description} ({header})"] = value
+                    ColorOutput.info(f"Security Header: {header} = {value}")
+
+            # Check for CDN presence
+            cdn_headers = {
+                "CF-RAY": "Cloudflare",
+                "X-CDN-Pop": "CDN",
+                "X-Cache": "CDN",
+                "X-CDN": "CDN",
+                "X-Edge-Location": "CDN",
+                "X-Fastly": "Fastly",
+                "X-Akamai-Transformed": "Akamai",
+                "X-Edge-IP": "CDN",
+                "X-CDN-Geo": "CDN",
+                "X-CDN-Request-ID": "CDN"
+            }
+
+            for header, cdn in cdn_headers.items():
+                if header in response.headers:
+                    detected_techs[cdn] = True
+                    ColorOutput.info(f"Detected {cdn} CDN")
+
+            # Store results
+            self.results["technologies"] = detected_techs
+
+            if not detected_techs:
+                ColorOutput.warning("No technologies detected")
+            else:
+                ColorOutput.success(f"Detected {len(detected_techs)} technologies")
+
         except requests.exceptions.RequestException as e:
             ColorOutput.error(f"Error in advanced fingerprinting: {str(e)}")
+            if self.verbose:
+                import traceback
+                ColorOutput.error(traceback.format_exc())
 
     def _subdomain_enumeration(self):
         """Enumerate subdomains with improved performance and rate limiting"""
@@ -1837,161 +3361,227 @@ class ADVWebRecon:
             ColorOutput.info("No API endpoints discovered")
 
     def _check_api_path(self, url):
-        """Check if a path returns API-like content"""
-        response = self._make_request(url)
-        if not response:
-            return None
-        
-        # Return None for 404s and server errors
-        if response.status_code in [404, 500, 502, 503, 504]:
-            return None
-        
-        content_type = response.headers.get('Content-Type', '')
-        
-        # Check if it's likely an API endpoint
-        api_indicators = [
-            # Content type indicators
-            'application/json' in content_type,
-            'application/xml' in content_type,
-            'application/graphql' in content_type,
-            # Content indicators
-            response.text.strip().startswith('{') and response.text.strip().endswith('}'),
-            response.text.strip().startswith('[') and response.text.strip().endswith(']'),
-            # Try to parse as JSON
-            self._is_valid_json(response.text),
-            # Keywords in the response
-            'api' in url.lower() and (response.status_code != 404),
-            'swagger' in response.text.lower(),
-            'openapi' in response.text.lower(),
-            'graphql' in response.text.lower()
-        ]
-        
-        if any(api_indicators):
-            api_info = {
-                "url": url,
-                "status_code": response.status_code,
-                "content_type": content_type,
-                "content_length": len(response.text)
-            }
+        """Check if a path returns API-like content with improved error handling"""
+        try:
+            response = self._make_request(url)
+            if not response:
+                return None
             
-            ColorOutput.success(f"Potential API endpoint: {url} (Status: {response.status_code})")
-            return api_info
-        
-        return None
+            # Return None for 404s and server errors
+            if response.status_code in [404, 500, 502, 503, 504]:
+                return None
+            
+            content_type = response.headers.get('Content-Type', '')
+            
+            # Check if it's likely an API endpoint
+            api_indicators = [
+                # Content type indicators
+                'application/json' in content_type,
+                'application/xml' in content_type,
+                'application/graphql' in content_type,
+                # Content indicators
+                response.text.strip().startswith('{') and response.text.strip().endswith('}'),
+                response.text.strip().startswith('[') and response.text.strip().endswith(']'),
+                # Try to parse as JSON
+                self._is_valid_json(response.text),
+                # Keywords in the response
+                'api' in url.lower() and (response.status_code != 404),
+                'swagger' in response.text.lower(),
+                'openapi' in response.text.lower(),
+                'graphql' in response.text.lower()
+            ]
+            
+            if any(api_indicators):
+                api_info = {
+                    "url": url,
+                    "status_code": response.status_code,
+                    "content_type": content_type,
+                    "content_length": len(response.text)
+                }
+                
+                ColorOutput.success(f"Potential API endpoint: {url} (Status: {response.status_code})")
+                return api_info
+            
+            return None
+        except Exception as e:
+            if self.verbose:
+                ColorOutput.error(f"Error checking API path {url}: {str(e)}")
+                import traceback
+                ColorOutput.error(traceback.format_exc())
+            return None
 
     def _is_valid_json(self, text):
-        """Check if text is valid JSON"""
+        """Check if text is valid JSON with error handling"""
         try:
             if not text.strip():
                 return False
             json.loads(text)
             return True
-        except ValueError:
+        except json.JSONDecodeError:
+            return False
+        except Exception as e:
+            if self.verbose:
+                ColorOutput.error(f"Error validating JSON: {str(e)}")
             return False
 
     def _check_cors_misconfig(self):
-        """Check for CORS misconfigurations with enhanced tests and reporting"""
-        ColorOutput.section("CORS Misconfiguration Check")
-
-        # Expanded test origins to cover more edge cases and common bypasses
+        """Check for CORS misconfigurations"""
+        if self.verbose:
+            ColorOutput.info("Running CORS Misconfiguration Check...")
+        
+        cors_issues = []
         test_origins = [
             "https://evil.com",
             "https://attacker.com",
+            "https://malicious.com",
             "null",
-            f"https://{self.domain}.evil.com",
-            f"https://{self.domain}.attacker.com",
-            f"https://{self.domain}.com",  # Subdomain confusion
-            f"https://evil{self.domain}",  # Domain confusion
-            f"http://{self.domain}",  # HTTP instead of HTTPS
-            f"https://{self.domain}:443",  # Explicit port
-            f"https://{self.domain}:444",  # Non-standard port
-            f"https://{self.domain}.",  # Trailing dot
-            f"https://{self.domain}%00.evil.com",  # Null byte injection
-            f"https://{self.domain}.com.evil.com",  # Nested subdomain
-            "file://",  # File scheme
-            "chrome-extension://",  # Browser extension scheme
-            "https://localhost",  # Localhost origin
+            "https://trusted.com",
+            "http://localhost",
+            "http://127.0.0.1"
         ]
-
-        cors_issues = []
-
+        
+        # Test different HTTP methods
+        methods = ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+        
         for origin in test_origins:
+            headers = {
+                "Origin": origin,
+                "Access-Control-Request-Method": "GET",
+                "Access-Control-Request-Headers": "Content-Type"
+            }
+            
             try:
-                headers = {
-                    "User-Agent": USER_AGENT,
-                    "Origin": origin,
-                    "Access-Control-Request-Method": "GET",
-                    "Access-Control-Request-Headers": "X-Requested-With"
-                }
-
+                # First check OPTIONS request
                 response = self._make_request(
                     self.target_url,
+                    method="OPTIONS",
                     headers=headers,
-                    verify=False
+                    timeout=self.timeout
                 )
                 
-                if not response:
-                    continue
-
-                acao_header = response.headers.get('Access-Control-Allow-Origin')
-                acac_header = response.headers.get('Access-Control-Allow-Credentials')
-                acah_header = response.headers.get('Access-Control-Allow-Headers')
-                acam_header = response.headers.get('Access-Control-Allow-Methods')
-
-                if acao_header:
-                    issue = {
-                        "origin_tested": origin,
-                        "acao_header": acao_header,
-                        "acac_header": acac_header,
-                        "acah_header": acah_header,
-                        "acam_header": acam_header,
-                    }
-
-                    # Check for wildcard with credentials
-                    if acao_header == '*':
-                        if acac_header == 'true':
-                            issue["severity"] = "Critical"
-                            issue["description"] = "Wildcard CORS with credentials allowed"
-                            ColorOutput.error(f"Critical CORS misconfiguration: Wildcard (*) with credentials")
-                        else:
-                            issue["severity"] = "High"
-                            issue["description"] = "Wildcard CORS without credentials"
-                            ColorOutput.warning(f"CORS misconfiguration: Wildcard (*) origin allowed")
-
-                    # Check if reflected origin matches the origin header and is not the target domain itself
-                    elif acao_header == origin and origin != self.target_url:
-                        if acac_header == 'true':
-                            issue["severity"] = "Critical"
-                            issue["description"] = f"Reflects arbitrary origin ({origin}) with credentials"
-                            ColorOutput.error(f"Critical CORS misconfiguration: Reflects {origin} with credentials")
-                        else:
-                            issue["severity"] = "High"
-                            issue["description"] = f"Reflects arbitrary origin ({origin})"
-                            ColorOutput.warning(f"CORS misconfiguration: Reflects arbitrary origin {origin}")
-
-                    # Check for partial matches or suspicious patterns
-                    elif self.domain in acao_header and acao_header != self.target_url:
-                        issue["severity"] = "Medium"
-                        issue["description"] = f"Partial origin reflection or subdomain mismatch: {acao_header}"
-                        ColorOutput.warning(f"CORS misconfiguration: Partial origin reflection {acao_header}")
-
-                    # Check for missing or empty ACAO header when Origin was sent
-                    elif acao_header == 'null' or acao_header == '':
-                        issue["severity"] = "Low"
-                        issue["description"] = "Empty or null Access-Control-Allow-Origin header"
-                        ColorOutput.warning(f"CORS misconfiguration: Empty/null ACAO header")
-
-                    if "severity" in issue:
-                        cors_issues.append(issue)
-
-            except requests.exceptions.RequestException as e:
+                if response:
+                    acao = response.headers.get("Access-Control-Allow-Origin", "")
+                    acac = response.headers.get("Access-Control-Allow-Credentials", "")
+                    acam = response.headers.get("Access-Control-Allow-Methods", "")
+                    acah = response.headers.get("Access-Control-Allow-Headers", "")
+                    acma = response.headers.get("Access-Control-Max-Age", "")
+                    
+                    # Check for wildcard origin
+                    if acao == "*":
+                        cors_issues.append({
+                            "severity": "High",
+                            "origin": origin,
+                            "description": "Wildcard CORS policy detected",
+                            "details": {
+                                "header": "Access-Control-Allow-Origin: *",
+                                "risk": "Allows any domain to make cross-origin requests",
+                                "recommendation": "Restrict to specific trusted domains"
+                            }
+                        })
+                    
+                    # Check for credentials with wildcard
+                    if acao == "*" and acac.lower() == "true":
+                        cors_issues.append({
+                            "severity": "Critical",
+                            "origin": origin,
+                            "description": "Wildcard CORS with credentials enabled",
+                            "details": {
+                                "headers": {
+                                    "Access-Control-Allow-Origin": "*",
+                                    "Access-Control-Allow-Credentials": "true"
+                                },
+                                "risk": "Allows any domain to make authenticated cross-origin requests",
+                                "recommendation": "Never use wildcard with credentials"
+                            }
+                        })
+                    
+                    # Check for reflected origin
+                    if acao == origin:
+                        cors_issues.append({
+                            "severity": "Medium",
+                            "origin": origin,
+                            "description": "Origin reflection detected",
+                            "details": {
+                                "header": f"Access-Control-Allow-Origin: {origin}",
+                                "risk": "Origin reflection can be exploited if origin validation is weak",
+                                "recommendation": "Implement strict origin validation"
+                            }
+                        })
+                    
+                    # Check for missing security headers
+                    if not acam or not acah:
+                        cors_issues.append({
+                            "severity": "Low",
+                            "origin": origin,
+                            "description": "Incomplete CORS headers",
+                            "details": {
+                                "missing_headers": {
+                                    "Access-Control-Allow-Methods": acam,
+                                    "Access-Control-Allow-Headers": acah
+                                },
+                                "risk": "May lead to unexpected CORS behavior",
+                                "recommendation": "Specify all required CORS headers"
+                            }
+                        })
+                    
+                    # Check for overly permissive methods
+                    if acam and "*" in acam:
+                        cors_issues.append({
+                            "severity": "Medium",
+                            "origin": origin,
+                            "description": "Overly permissive CORS methods",
+                            "details": {
+                                "header": f"Access-Control-Allow-Methods: {acam}",
+                                "risk": "Allows all HTTP methods",
+                                "recommendation": "Restrict to specific required methods"
+                            }
+                        })
+                    
+                    # Test actual requests with different methods
+                    for method in methods:
+                        try:
+                            method_response = self._make_request(
+                                self.target_url,
+                                method=method,
+                                headers={"Origin": origin},
+                                timeout=self.timeout
+                            )
+                            
+                            if method_response:
+                                method_acao = method_response.headers.get("Access-Control-Allow-Origin", "")
+                                
+                                # Check for method-specific issues
+                                if method_acao == "*" and method != "GET":
+                                    cors_issues.append({
+                                        "severity": "High",
+                                        "origin": origin,
+                                        "description": f"Wildcard CORS for {method} method",
+                                        "details": {
+                                            "method": method,
+                                            "header": "Access-Control-Allow-Origin: *",
+                                            "risk": f"Allows any domain to make {method} requests",
+                                            "recommendation": f"Restrict {method} method to specific domains"
+                                        }
+                                    })
+                        except Exception as e:
+                            if self.verbose:
+                                ColorOutput.warning(f"Error testing {method} method: {str(e)}")
+            
+            except Exception as e:
                 if self.verbose:
-                    ColorOutput.error(f"Error testing CORS with origin {origin}: {str(e)}")
-
-        if not cors_issues:
-            ColorOutput.success("No CORS misconfigurations detected")
-
+                    ColorOutput.warning(f"Error checking CORS for origin {origin}: {str(e)}")
+        
+        # Add CORS issues to results
         self.results["cors_issues"] = cors_issues
+        
+        # Calculate CORS score
+        self._calculate_cors_score()
+        
+        if self.verbose:
+            if cors_issues:
+                ColorOutput.warning(f"Found {len(cors_issues)} CORS misconfigurations")
+            else:
+                ColorOutput.success("No CORS misconfigurations detected")
 
     def _js_analysis(self):
         """Analyze JavaScript files for endpoints, secrets, and suspicious patterns"""
@@ -2455,27 +4045,37 @@ class ADVWebRecon:
             <h2>CORS Misconfigurations</h2>
             <table>
                 <tr>
-                    <th>Origin Tested</th>
-                    <th>Access-Control-Allow-Origin</th>
-                    <th>Access-Control-Allow-Credentials</th>
                     <th>Severity</th>
+                    <th>Origin</th>
                     <th>Description</th>
+                    <th>Details</th>
                 </tr>
 """)
                     for issue in cors_issues:
-                        origin = safe_get(issue, "origin_tested", default="N/A")
-                        acao = safe_get(issue, "acao_header", default="N/A")
-                        acac = safe_get(issue, "acac_header", default="N/A")
-                        severity = safe_get(issue, "severity", default="N/A")
-                        description = safe_get(issue, "description", default="")
-                        severity_class = "danger" if severity.lower() == "high" else "warning" if severity.lower() == "medium" else "info"
+                        severity = issue.get('severity', 'N/A')
+                        origin = issue.get('origin', 'N/A')
+                        description = issue.get('description', '')
+                        details = issue.get('details', {})
+                        details_str = ""
+                        if isinstance(details, dict):
+                            if 'risk' in details:
+                                details_str += f"Risk: {details['risk']}\n"
+                            if 'recommendation' in details:
+                                details_str += f"Recommendation: {details['recommendation']}"
+                        
+                        severity_color = {
+                            "Critical": ColorOutput.RED,
+                            "High": ColorOutput.RED,
+                            "Medium": ColorOutput.YELLOW,
+                            "Low": ColorOutput.BLUE
+                        }.get(severity, ColorOutput.ENDC)
+                        
                         f.write(f"""
-                <tr class="{severity_class}">
-                    <td>{origin}</td>
-                    <td>{acao}</td>
-                    <td>{acac}</td>
+                <tr class="{severity_color}">
                     <td>{severity}</td>
+                    <td>{origin}</td>
                     <td>{description}</td>
+                    <td>{details_str}</td>
                 </tr>
 """)
                     f.write("""
@@ -2541,12 +4141,45 @@ class ADVWebRecon:
 
     def __del__(self):
         """Cleanup resources when the object is destroyed"""
-        if hasattr(self, 'session'):
-            self.session.close()
-        # Clear cache
-        self.cache.clear()
-        # Clear LRU cache
-        self._dns_query.cache_clear()
+        try:
+            # Close the session if it exists
+            if hasattr(self, 'session'):
+                self.session.close()
+            
+            # Clear the cache dictionary
+            if hasattr(self, 'cache'):
+                self.cache.clear()
+            
+            # Clear DNS resolver cache
+            if hasattr(self, '_dns_query'):
+                try:
+                    # Clear the DNS resolver cache
+                    dns.resolver.reset_default_resolver()
+                    # Clear the LRU cache
+                    self._dns_query.cache_clear()
+                except Exception:
+                    pass
+        except Exception:
+            pass  # Ignore any cleanup errors during object destruction
+
+    def _get_service_name(self, port):
+        """Get common service name for a port"""
+        common_ports = {
+            21: "FTP",
+            22: "SSH",
+            23: "Telnet",
+            25: "SMTP",
+            53: "DNS",
+            80: "HTTP",
+            110: "POP3",
+            143: "IMAP",
+            443: "HTTPS",
+            3306: "MySQL",
+            3389: "RDP",
+            5432: "PostgreSQL",
+            27017: "MongoDB"
+        }
+        return common_ports.get(port, "Unknown")
 
 
 def main():
@@ -2571,7 +4204,7 @@ def main():
    ╚═╝  ╚═╝╚═════╝   ╚═══╝       ╚══╝╚══╝ ╚══════╝╚══════╝    ╚═╝  ╚═╝╚══════╝ ╚═════╝ ╚═╝  ╚═══╝
                                                                                                  
    Advanced Web Application Reconnaissance Tool v{VERSION}
-   Made by viphacker100
+   Made by viphacker100 'Aryan Ahirwar'
    
    """)
     
